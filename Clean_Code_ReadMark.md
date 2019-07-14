@@ -4,18 +4,18 @@
 
 ### 不同的人有不同的看法：
 
-**Bjarne：**
+**`Bjarne`：**
 
 1. 整洁的代码逻辑直接了当，使得缺陷容易暴露；
 2. 尽量减少依赖关系，便于维护；
 3. 依据某种分层战略完善错误处理的代码（疑问：何种分层战略？）；
 4. 性能调至最优，尽可能的减少运算周期（对算法能力有一定的要求）。
 
-**Grandy：**
+**`Grandy`：**
 
 1. 干净利落的抽象。理解为所抽象出来的对象只包含自己必需的东西。
 
-**Ron：**
+**`Ron`：**
 
 1. 能通过所有测试；
 2. 没有重复的代码；
@@ -96,7 +96,7 @@ public List<Cell> GetFlaggedCells(){
 #### 规则二：避免误导
 
 1. 尽量避免在开发平台上会出现的专有名词。
-2. 在编写集合类型的对象名称时，要注意尽量避免在名称中出现容器类型。例如accountList表示一组账号，即使所使用的容器真的是List也尽量不要使用List做结尾，可以改用accounts、accountGroup等。
+2. 在编写集合类型的对象名称时，要注意尽量避免在名称中出现容器类型。例如`accountList`表示一组账号，即使所使用的容器真的是`List`也尽量不要使用List做结尾，可以改用`accounts`、`accountGroup`等。
 3. 在编写代码时尽量不要让“l"和“O"出现在变量的开头或者结尾或者单独作为变量，因为其在某些字体下有可能会与”1“和”0“混淆。
 
 #### 规则三：做有意义的区分
@@ -193,7 +193,7 @@ private void PrintGuessStatistics(char candidate, int count){
 
 ```
 
-创建一个`GuessStatisticsMessage`的类，把方法中的number、verb、pluralModifier变量变成该类的成员字段。在使用时增加了语境使得代码更加干净利落。
+创建一个`GuessStatisticsMessage`的类，把方法中的`number`、`verb`、`pluralModifier`变量变成该类的成员字段。在使用时增加了语境使得代码更加干净利落。
 
 ```c#
 //可以看得出函数都是靠Alt + Enter自动生成的。
@@ -242,6 +242,136 @@ public class classGuessStatisticsMessage{
 2. 针对条件语句，循环语句，应该大体是一个函数调用的语句。这样可以增加函数的可读性。
 3. 函数体不应该大到容纳整个嵌套的结构，嵌套的层级应该不多于两层。
 
-#### 规则二：只做一件事：
+#### 规则二：只做一件事（每个函数一个抽象层级）：
 
 **函数应该做一件事。做好这件事。只做一件事。**难点在于这件该做的事是什么？判断是否只做一件事的方法是：看函数是否能在拆出一个函数，该函数不仅仅只是重新实现了一遍原函数。
+
+**自顶向下的阅读代码。**实际上是一种对问题的解剖，将一个主问题分解成若干个子问题，不断的向下分解，直到成为代码实现。利用TO DO的语句可以保持抽象层级的一致性。
+
+针对是switch语句，为其创建多态对象，将其隐藏在某个继承关系中，在系统的其他部分看不到。代码如下：
+
+```java
+public abstract class Employee {
+	public abstract boolean IsPayday();
+	public abstract Money CalculatePay();
+	public abstract void DeliverPay(Money pay);
+}
+public interface EmployeeFactory {
+	public Employee MakeEmployee(EmployeeRecord r) throws InvalidEmployeeType {
+		switch(r.type) {
+			case COMMISSIONED:
+				return new CommissionedEmployee(r);
+			case HOURLY:
+				return new HourlyEmployee(r);
+			case SALARIED:
+				return new SalariedEmployee(r);
+			default:
+				throw new InvalidEmployeeType(r.type)
+		}
+	}
+}
+```
+
+利用抽象工厂模式将switch语句隐藏起来，switch语句只用于创建新的Employee实例（当有新的员工类型出现时只需要修改工厂类）。
+
+#### 规则三：使用描述性名称
+
+顾名思义，就是使用可以描述这段函数是干嘛的语言来给函数起名。（一般我们可以用`IDE`自动生成）
+
+#### 规则四：函数参数
+
+1. 参数个数要尽可能的少；
+2. 参数尽量以输入为主，少使用参数作为函数的输出；
+
+**针对一元函数**做三种事情：函数问了询问该参数一些问题；函数希望操作该参数转换为其他的东西再输出；函数通过参数来改变系统状态。需要尽量避免编写不做这三种事情的一元函数。绝对不要向函数内传入布尔值。
+
+**针对二元函数**首先要注意，两个参数并不一定是自然排序，而是一种需要学习的约定。在编写函数时，可以尝试使用一些机制使其变成一个一元函数。例如`writeField`可以写做`outputStream`的成员之一，即`outputStream.writeField(name)`.
+
+**针对多元函数**说明其中一些参数应该封装成一个类了。如下两个声明可以体现差别：
+
+```java
+Circle makeCircle(double x, double y, double radius);
+Circle makeCircle（Point center, double radius);
+```
+
+**注意：参数列表当做一个参数来看待。**
+
+#### 规则五：无副作用
+
+函数不要产生时序性的耦合和顺序性的依赖。以下面代码为例：
+
+```java
+public class UserValidator{
+	private Cryptographer cryptographer;
+
+	public boolean CheckPassword(String userName, String password){
+		User user = UserGateWay.findByName(userName);
+		if(user != User.NULL){
+			String codedPhrase = user.GetPhraseEncodedByPassword();
+			if("Valid Password".equals(phrase)) {
+				Session.initialize();
+				return true;
+			}
+		}
+		return false;
+	}
+}
+```
+
+该代码会在调用`CheckPassword`函数时，初始化该次会话（实际上做了两件事），造成了一次时序性的耦合。遇到这种情况，需想办法解除这种耦合性。如果一定需要这种耦合性，则需要在函数名中体现。
+
+#### 规则六：分割指令和询问
+
+函数要么做什么事，要么回答什么事，不要两样都做。以下面代码为例：
+
+```java
+将
+	public boolean set(String attribute, String value);
+改为：
+	if(attributeExists("userName")) {
+		setAttribute("userName", "uncleBob");
+	···
+	}
+```
+
+#### 规则七：使用异常代替返回错误代码
+
+指令型函数（回答什么事的函数）在返回错误码时，需要对错误码的情况进行处理。所谓错误码就是，就是一个函数回答某个问题是返回的状态值（通常为一类枚举）。这违背了只做一件事的原则。可以用`try/catch`语句将错误处理的代码从代码的主路径中分离出来。例如：
+
+```java
+try{
+    DeletePage(page);
+    registry.DeleteReference(page.name);
+    ConfigKeys.DeleteKey(page.name.makeKey());
+}
+catch(Exception e){
+    logger.log(e.getMessage());
+}
+```
+
+错误的处理还可以抽离出代码的主题部分，将上述函数写成下面的样子。
+
+```java
+public void Delete(Page page){
+	try{
+		DeletePageAndAllRefernces(page);
+	}
+	catch (Exception e){
+		LogError(e);
+	}
+}
+
+private void DeletePageAndAllRefernces(Page page) throws Exception{
+	DeletePage(page);
+    registry.DeleteReference(page.name);
+    ConfigKeys.DeleteKey(page.name.makeKey());
+}
+
+private void LogError(Exception e){
+	logger.log(e.GetMessage());
+}
+```
+
+此时，`Delete`函数只做了错误处理这件事，而把删除Page相关的代码交给了`DeletePageAndAllRefernces`函数。这样就可以把错误处理和删除有效地隔离开。
+
+使用异常代替错误码。可以避免代码的重新编译和部署，因为新的异常可以直接从异常类里派生出来，而错误码需要重新添加和部署。
