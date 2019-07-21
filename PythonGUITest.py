@@ -3,54 +3,128 @@
  
 from Tkinter import *
 import os
+import ctypes
+
+path = ''
+disk = ''
+
+class InvalidOperation(Exception):
+	def __init__(self, message):
+		ctypes.windll.user32.MessageBoxW(0, message, u'提示', 0)
+
+class GitGUI(object):
+	def __init__(self,root, fileList):
+		self.root = root
+		self.fileList = fileList
+
+	def initialGUI(self):    
+		self.root.geometry('500x500')
+
+		self.f = Frame(self.root)
+		self.f.pack(side = "bottom")
+		
+		Label(self.f, text = "commit").pack(side = "left")
+		
+		self.text = Text(self.f,width=44, height=4, font=('conslon', 14), foreground='black')
+		self.text.pack()
+
+		self.listB  = Listbox(self.root, selectmode = MULTIPLE)
+		self.ShowFileList(self.fileList)
+
+		self.uploadBtn = Button(self.root,text='Upload', command=self.UpLoad, width=10)
+		self.uploadBtn.pack()
+
+	def ShowFileList(self, fileList):
+		for item in fileList:
+			print item
+			self.listB.insert(0,item)
+		self.listB.pack()  
+
+	
+	def UpLoad(self):
+		uploadString = ''
+
+		self.SetWorkPath()
+
+		commitment = self.GetCommitment()
+
+		selectList = self.GetSelectFileList()
+
+		try:
+			self.CheckInvaildOperation(commitment, selectList)
+		except InvalidOperation as e:
+			return
+
+		print selectList
+
+		uploadString = self.SetUpLoadFileString(selectList)
+
+		self.GitAdd(uploadString)
+
+		self.GitCommit(commitment)
+		
+		self.GitPush()
+
+	def GetCommitment(self):
+		return self.text.get(1.0, END).split('\n')[0]
+
+	def GetSelectFileList(self):
+		selectList = []
+		for i in self.listB.curselection():
+			selectList.append(self.fileList[i])
+		return selectList
+
+	def CheckInvaildOperation(self, commitment, selectList):
+		message = ""
+
+		if len(selectList) <= 0:
+			message = u'至少选择一个文件'
+
+		if len(commitment) <= 1:
+			message = u'需要提交更新日志'
+		
+		if message != "":
+			raise InvalidOperation(message)
+
+	def SetUpLoadFileString(self, selectList):
+		uploadString = ''
+		for fileName in selectList:
+			uploadString += '\"{fileName}\" '.format(fileName = fileName)
+		print uploadString
+		return uploadString
+
+	def SetWorkPath(self):				
+		disk = path.split('\\')[0]
+		changePath = "{disk}\ncd {path}\n".format(disk = disk, path = path)
+		os.system(changePath)
+
+	def GitAdd(self, uploadString):
+		commandLine = "git add {uploadfile}\n".format(uploadfile = uploadString)
+		os.system(commandLine)
+
+	def GitCommit(self, commitment):
+		commandLine = "git commit -m\"{commitment}\"".format(commitment = commitment)
+		os.system(commandLine)
+
+	def GitPush(self):
+		commandLine = "git push origin master"
+		os.system(commandLine)
+
+def GetPathFileList():
+	path = os.getcwd()
+	fileList = os.listdir(path)
+	return fileList
 
 
-path = os.getcwd()
-disk = path.split('\\')[0]
-root = Tk()         
-root.geometry('500x500')   
 
-f = Frame(root)
-f.pack(side = "bottom")
-Label(f, text = "commit").pack(side = "left")
-text = Text(f,width=44, height=4, font=('conslon', 14), foreground='black')
-text.pack()
-fileList = os.listdir(path)
-listB  = Listbox(root, selectmode = MULTIPLE)          
-for item in fileList:                 # 第一个小部件插入数据
-    listB.insert(0,item)
-fileList.reverse()
-listB.pack()  
-                  # 将小部件放置到主窗口中
-import ctypes 
-def Call_Entry():
-	commitment = text.get(1.0, END)
-	commitment = commitment.split('\n')[0]
-	selectList = []
-	for i in listB.curselection():
-		selectList.append(fileList[i])
-	if len(selectList) <= 0:
-		ctypes.windll.user32.MessageBoxW(0, u'至少选择一个文件', u'提示', 0)
-		# root.tk.messagebox.showinfo('Alert','请输入评论')
-		return
-	# if len(commitment) <= 1:
-	# 	ctypes.windll.user32.MessageBoxW(0, u'需要提交更新日志', u'提示', 0)
-	print selectList
-	uploadString = ''
-	for fileName in selectList:
-		uploadString += '\"'
-		uploadString += fileName
-		uploadString += '\"'
-		uploadString += ' '
-	print uploadString
-	changePath = "{disk}\ncd {path}\n".format(disk = disk, path = path)
-	os.system(changePath)
-	commandLine = "git add {uploadfile}\n".format(uploadfile = uploadString)
-	os.system(commandLine)
-	commandLine = "git commit -m\"{commitment}\"".format(commitment = commitment)
-	os.system(commandLine)
-	commandLine = "git push origin master"
-	os.system(commandLine)
-uploadBtn = Button(root,text='Upload', command=Call_Entry, width=10)
-uploadBtn.pack()
-root.mainloop()                 # 进入消息循环
+def main():
+
+	fList = GetPathFileList()
+
+	gitGUI = GitGUI(Tk(), fList)
+	gitGUI.initialGUI()
+	fList.reverse()
+	gitGUI.root.mainloop()
+
+if __name__ == '__main__':
+	main()
