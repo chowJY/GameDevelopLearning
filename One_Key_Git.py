@@ -39,6 +39,9 @@ class GitGUI(object):
 		self.uploadBtn = Button(self.root,text='Upload', command=self.UpLoad, width=10)
 		self.uploadBtn.pack()
 
+		self.deleteBtn = Button(self.root,text='Delete', command=self.Delete, width=10)
+		self.deleteBtn.pack()
+
 	def ShowFileList(self, fileList):
 		for item in fileList:
 			self.listB.insert(0,item)
@@ -48,25 +51,35 @@ class GitGUI(object):
 	
 	def UpLoad(self):
 		uploadString = ''
-
-		self.SetWorkPath()
-
-		commitment = self.GetCommitment()
-
-		selectList = self.GetSelectFileList()
-
+		commitment = ''
+		
 		try:
-			self.CheckInvaildOperation(commitment, selectList)
+			uploadString, commitment = self.GetUpdateInof()
 		except InvalidOperation as e:
 			return
-
-		uploadString = self.SetUpLoadFileString(selectList)
 
 		self.GitAdd(uploadString)
 
 		self.GitCommit(commitment)
 		
 		self.GitPush()
+
+	def Delete(self):
+		uploadString = ''
+		commitment = ''
+		
+		try:
+			uploadString, commitment = self.GetUpdateInof()
+		except InvalidOperation as e:
+			return
+		for i in self.listB.curselection():
+			self.listB.delete(i)
+		self.GitRemove(uploadString)
+
+		self.GitCommit(commitment)
+		
+		self.GitPush()
+
 
 	def GetCommitment(self):
 		return self.text.get(1.0, END).split('\n')[0]
@@ -95,6 +108,21 @@ class GitGUI(object):
 			uploadString += '\"{fileName}\" '.format(fileName = fileName)
 		return uploadString
 
+	def GetUpdateInof(self):
+		uploadString = ''
+
+		self.SetWorkPath()
+
+		commitment = self.GetCommitment()
+
+		selectList = self.GetSelectFileList()
+
+		self.CheckInvaildOperation(commitment, selectList)
+		
+		uploadString = self.SetUpLoadFileString(selectList)
+
+		return uploadString, commitment
+
 	def SetWorkPath(self):				
 		disk = path.split('\\')[0]
 		changePath = "{disk}\ncd {path}\n".format(disk = disk, path = path)
@@ -108,13 +136,22 @@ class GitGUI(object):
 		commandLine = "git commit -m\"{commitment}\"".format(commitment = commitment)
 		os.system(commandLine)
 
+	def GitRemove(self, uploadString):
+		commandLine = "git rm -r {uploadfile}\n".format(uploadfile = uploadString)
+		os.system(commandLine)
+
 	def GitPush(self):
 		commandLine = "git push origin master"
 		os.system(commandLine)
 
 def GetPathFileList():
-	path = os.getcwd()
-	fileList = os.listdir(path)
+	fileList = []
+	for root, dirs, files in os.walk(".", topdown=True):
+		if '.\\.git' in root:
+			continue
+		for file in files:
+			fileList.append(os.path.join(root,file))
+
 	return fileList
 
 def main():
