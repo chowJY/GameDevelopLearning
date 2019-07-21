@@ -1,6 +1,11 @@
 #!/usr/bin/python
 # -*- coding: UTF-8 -*-
- 
+################使用说明#####################
+# 将该文件放在已经与仓库建立好连接的文件夹下   #
+# 运行后选中所需要上传的文件。                #
+# 一定要写提交说明                          #
+# 点击Upload 即可上传                      #
+##########################################
 from Tkinter import *
 import os
 import ctypes
@@ -36,7 +41,6 @@ class GitGUI(object):
 
 	def ShowFileList(self, fileList):
 		for item in fileList:
-			print item
 			self.listB.insert(0,item)
 		self.listB.pack()  
 
@@ -90,7 +94,6 @@ class GitGUI(object):
 		uploadString = ''
 		for fileName in selectList:
 			uploadString += '\"{fileName}\" '.format(fileName = fileName)
-		print uploadString
 		return uploadString
 
 	def SetWorkPath(self):				
@@ -115,15 +118,13 @@ def GetPathFileList():
 	fileList = os.listdir(path)
 	return fileList
 
-
-
 def main():
 
 	fList = GetPathFileList()
 
 	gitGUI = GitGUI(Tk(), fList)
 	gitGUI.initialGUI()
-	fList.reverse()
+	
 	gitGUI.root.mainloop()
 
 if __name__ == '__main__':
