@@ -42,7 +42,8 @@ class GitGUI(object):
 	def ShowFileList(self, fileList):
 		for item in fileList:
 			self.listB.insert(0,item)
-		self.listB.pack()  
+		self.listB.pack()
+		fileList.reverse()
 
 	
 	def UpLoad(self):
@@ -58,8 +59,6 @@ class GitGUI(object):
 			self.CheckInvaildOperation(commitment, selectList)
 		except InvalidOperation as e:
 			return
-
-		print selectList
 
 		uploadString = self.SetUpLoadFileString(selectList)
 
