@@ -27,27 +27,36 @@ class GitGUI(object):
 	def initialGUI(self):    
 		self.root.geometry('500x500')
 
-		self.f = Frame(self.root)
-		self.f.pack(side = "bottom")
-		
-		Label(self.f, text = "commit").pack(side = "left")
-		
-		self.text = Text(self.f,width=44, height=4, font=('conslon', 14), foreground='black')
-		self.text.pack()
+		self.top = Frame(self.root, height = 50, width = 400)
+		self.top.pack(anchor = 'n', fill = 'x')
 
-		self.listB  = Listbox(self.root, selectmode = MULTIPLE)
+		self.middle = Frame(self.root, height = 20, width = 400)
+		self.middle.pack(anchor = 'center', pady = 10)
+
+		self.bottom = Frame(self.root, height = 250, width = 400)
+		self.bottom.pack(anchor = 'center', pady = 30, fill = 'x')
+		
+		Label(self.bottom, text = "commit").pack(side = "left", padx = 10)
+		
+		self.text = Text(self.bottom, width=40, height=4, font=('conslon', 14), foreground='black')
+		self.text.pack(side = 'left', fill = 'x', expand = True)
+
+		self.listB  = Listbox(self.top, selectmode = MULTIPLE)
 		self.ShowFileList(self.fileList)
 
-		self.uploadBtn = Button(self.root,text='Upload', command=self.UpLoad, width=10)
-		self.uploadBtn.pack()
+		self.uploadBtn = Button(self.middle,text='Upload', command=self.UpLoad, width=10)
+		self.uploadBtn.pack(side = 'left', padx = 5)
 
-		self.deleteBtn = Button(self.root,text='Delete', command=self.Delete, width=10)
-		self.deleteBtn.pack()
+		self.uploadAllBtn = Button(self.middle,text='UploadAll', command=self.UpLoadAll, width=10)
+		self.uploadAllBtn.pack(side = 'left', padx = 5)
+
+		self.deleteBtn = Button(self.middle,text='Delete', command=self.Delete, width=10)
+		self.deleteBtn.pack(side = 'left', padx = 5)
 
 	def ShowFileList(self, fileList):
 		for item in fileList:
 			self.listB.insert(0,item)
-		self.listB.pack()
+		self.listB.pack(expand = True, fill = 'both')
 		fileList.reverse()
 
 	
@@ -82,6 +91,13 @@ class GitGUI(object):
 		
 		self.GitPush()
 
+	def UpLoadAll(self):
+
+		self.GitAdd('. *')
+
+		self.GitCommit("update All file")
+		
+		self.GitPush()
 
 	def GetCommitment(self):
 		return self.text.get(1.0, END).split('\n')[0]
@@ -155,12 +171,12 @@ def GetPathFileList():
 			fileList.append(os.path.join(root,file))
 
 	return fileList
-
+import copy
 def main():
 
 	fList = GetPathFileList()
 
-	gitGUI = GitGUI(Tk(), fList)
+	gitGUI = GitGUI(Tk(), copy.copy(fList))
 	gitGUI.initialGUI()
 	
 	gitGUI.root.mainloop()
